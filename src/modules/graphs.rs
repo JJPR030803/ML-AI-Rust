@@ -4,25 +4,25 @@ use plotters::style::RGBColor;
 // Define a color palette for different clusters
 fn get_cluster_color(cluster_id: usize) -> RGBColor {
     match cluster_id % 10 {
-        0 => RGBColor(31, 119, 180),   // blue
-        1 => RGBColor(255, 127, 14),   // orange
-        2 => RGBColor(44, 160, 44),    // green
-        3 => RGBColor(214, 39, 40),    // red
-        4 => RGBColor(148, 103, 189),  // purple
-        5 => RGBColor(140, 86, 75),    // brown
-        6 => RGBColor(227, 119, 194),  // pink
-        7 => RGBColor(127, 127, 127),  // gray
-        8 => RGBColor(188, 189, 34),   // olive
-        9 => RGBColor(23, 190, 207),   // cyan
-        _ => RGBColor(0, 0, 0),        // black (fallback)
+        0 => RGBColor(31, 119, 180),  // blue
+        1 => RGBColor(255, 127, 14),  // orange
+        2 => RGBColor(44, 160, 44),   // green
+        3 => RGBColor(214, 39, 40),   // red
+        4 => RGBColor(148, 103, 189), // purple
+        5 => RGBColor(140, 86, 75),   // brown
+        6 => RGBColor(227, 119, 194), // pink
+        7 => RGBColor(127, 127, 127), // gray
+        8 => RGBColor(188, 189, 34),  // olive
+        9 => RGBColor(23, 190, 207),  // cyan
+        _ => RGBColor(0, 0, 0),       // black (fallback)
     }
 }
 
 pub fn plot_centroides(
-    data: Vec<Vec<f64>>, 
-    centroids: &Vec<Vec<f64>>, 
-    min: f64, 
-    max: f64, 
+    data: Vec<Vec<f64>>,
+    centroids: &Vec<Vec<f64>>,
+    min: f64,
+    max: f64,
     filepath: &str,
     cluster_assignments: Option<&Vec<usize>>,
     show_classes: bool,
@@ -39,7 +39,8 @@ pub fn plot_centroides(
         .y_label_area_size(30)
         .build_cartesian_2d(min..max, min..max)?;
 
-    chart.configure_mesh()
+    chart
+        .configure_mesh()
         .x_desc("Feature 1 (Height)")
         .y_desc("Feature 2 (Weight)")
         .draw()?;
@@ -49,9 +50,11 @@ pub fn plot_centroides(
         // Group data points by cluster for better legend
         for cluster_id in 0..centroids.len() {
             let cluster_color = get_cluster_color(cluster_id);
-            
+
             // Draw only points belonging to this cluster
-            let cluster_points: Vec<_> = data.iter().zip(assignments.iter())
+            let cluster_points: Vec<_> = data
+                .iter()
+                .zip(assignments.iter())
                 .filter(|(_, &c)| c == cluster_id)
                 .map(|(point, _)| {
                     if point.len() >= 2 {
@@ -61,40 +64,44 @@ pub fn plot_centroides(
                     }
                 })
                 .collect();
-                
+
             if !cluster_points.is_empty() {
-                chart.draw_series(
-                    cluster_points.iter().map(|&(x, y)| {
-                        Circle::new((x, y), 5, cluster_color.filled())
-                    })
-                )?
-                .label(format!("Cluster {}", cluster_id))
-                .legend(move |(x, y)| Circle::new((x, y), 5, cluster_color.filled()));
+                chart
+                    .draw_series(
+                        cluster_points
+                            .iter()
+                            .map(|&(x, y)| Circle::new((x, y), 5, cluster_color.filled())),
+                    )?
+                    .label(format!("Cluster {}", cluster_id))
+                    .legend(move |(x, y)| Circle::new((x, y), 5, cluster_color.filled()));
             }
         }
     } else {
         // No cluster assignments, just draw all points in blue
-        chart.draw_series(
-            data.iter().map(|dato| {
+        chart
+            .draw_series(data.iter().map(|dato| {
                 if dato.len() >= 2 {
                     Circle::new((dato[0], dato[1]), 5, BLUE.filled())
                 } else {
                     Circle::new((0.0, 0.0), 5, BLUE.filled())
                 }
-            }),
-        )?
-        .label("Data Points")
-        .legend(|(x, y)| Circle::new((x, y), 5, BLUE.filled()));
+            }))?
+            .label("Data Points")
+            .legend(|(x, y)| Circle::new((x, y), 5, BLUE.filled()));
     }
 
     // Graficar centroides
-    chart.draw_series(
-        centroids.iter().enumerate().map(|(i, centroid)| {
+    chart
+        .draw_series(centroids.iter().enumerate().map(|(i, centroid)| {
             if centroid.len() >= 2 {
                 // Fixed: Removed PointStyle and simplified the element creation
                 let size = 10;
                 EmptyElement::at((centroid[0], centroid[1]))
-                    + Cross::new((0, 0), size, Into::<ShapeStyle>::into(&BLACK).stroke_width(2))
+                    + Cross::new(
+                        (0, 0),
+                        size,
+                        Into::<ShapeStyle>::into(&BLACK).stroke_width(2),
+                    )
                     + Circle::new((0, 0), size, get_cluster_color(i).filled())
             } else {
                 // Match the return type with the if branch
@@ -102,13 +109,13 @@ pub fn plot_centroides(
                     + Cross::new((0, 0), 0, BLACK.stroke_width(0))
                     + Circle::new((0, 0), 0, BLACK.filled())
             }
-        }),
-    )?
-    .label("Centroids")
-    .legend(|(x, y)| Cross::new((x, y), 10, BLACK.stroke_width(2)));
+        }))?
+        .label("Centroids")
+        .legend(|(x, y)| Cross::new((x, y), 10, BLACK.stroke_width(2)));
 
     // Añadir leyenda
-    chart.configure_series_labels()
+    chart
+        .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .position(SeriesLabelPosition::UpperRight)
@@ -120,7 +127,7 @@ pub fn plot_centroides(
 
 /// Plot 3D data points and centroids with cluster coloring
 pub fn plot_3d(
-    data: &Vec<Vec<f64>>, 
+    data: &Vec<Vec<f64>>,
     centroids: &Vec<Vec<f64>>,
     min: f64,
     max: f64,
@@ -141,7 +148,7 @@ pub fn plot_3d(
 
     // Split into 2 panels: top-down view and 3D view
     let (top_panel, bottom_panel) = root.split_vertically(384);
-    
+
     // Further split bottom panel for different angle views
     let (bottom_left, bottom_right) = bottom_panel.split_horizontally(512);
 
@@ -150,13 +157,17 @@ pub fn plot_3d(
 
     // Top-down view (X-Y plane)
     let mut top_chart = ChartBuilder::on(&top_panel)
-        .caption(format!("{}: {} vs {} (Top View)", plot_title, x_label, y_label), ("Arial", 20))
+        .caption(
+            format!("{}: {} vs {} (Top View)", plot_title, x_label, y_label),
+            ("Arial", 20),
+        )
         .margin(10)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
         .build_cartesian_2d(min..max, min..max)?;
 
-    top_chart.configure_mesh()
+    top_chart
+        .configure_mesh()
         .x_desc(x_label)
         .y_desc(y_label)
         .draw()?;
@@ -165,18 +176,19 @@ pub fn plot_3d(
     if let Some(assignments) = cluster_assignments {
         for cluster_id in 0..centroids.len() {
             let cluster_color = get_cluster_color(cluster_id);
-            
-            let filtered_data: Vec<_> = data.iter()
+
+            let filtered_data: Vec<_> = data
+                .iter()
                 .zip(assignments.iter())
                 .filter(|(point, &c)| c == cluster_id && point.len() >= 3)
                 .map(|(point, _)| (point[0], point[1]))
                 .collect();
-                
+
             if !filtered_data.is_empty() {
                 top_chart.draw_series(
-                    filtered_data.iter().map(|&(x, y)| {
-                        Circle::new((x, y), 3, cluster_color.filled())
-                    })
+                    filtered_data
+                        .iter()
+                        .map(|&(x, y)| Circle::new((x, y), 3, cluster_color.filled())),
                 )?;
             }
         }
@@ -185,31 +197,37 @@ pub fn plot_3d(
         top_chart.draw_series(
             data.iter()
                 .filter(|point| point.len() >= 3)
-                .map(|point| Circle::new((point[0], point[1]), 3, BLUE.filled()))
+                .map(|point| Circle::new((point[0], point[1]), 3, BLUE.filled())),
         )?;
     }
 
     // Draw centroids on top-down view
     top_chart.draw_series(
-        centroids.iter().enumerate()
+        centroids
+            .iter()
+            .enumerate()
             .filter(|(_, centroid)| centroid.len() >= 3)
             .map(|(i, centroid)| {
                 let center = (centroid[0], centroid[1]);
                 EmptyElement::at(center)
                     + Cross::new((0, 0), 8, Into::<ShapeStyle>::into(&BLACK).stroke_width(2))
                     + Circle::new((0, 0), 8, get_cluster_color(i).filled())
-            })
+            }),
     )?;
 
     // Create 3D-like view using X-Z plane (front view)
     let mut front_chart = ChartBuilder::on(&bottom_left)
-        .caption(format!("{}: {} vs {} (Front View)", plot_title, x_label, z_label), ("Arial", 20))
+        .caption(
+            format!("{}: {} vs {} (Front View)", plot_title, x_label, z_label),
+            ("Arial", 20),
+        )
         .margin(10)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
         .build_cartesian_2d(min..max, min..max)?;
 
-    front_chart.configure_mesh()
+    front_chart
+        .configure_mesh()
         .x_desc(x_label)
         .y_desc(z_label)
         .draw()?;
@@ -218,18 +236,19 @@ pub fn plot_3d(
     if let Some(assignments) = cluster_assignments {
         for cluster_id in 0..centroids.len() {
             let cluster_color = get_cluster_color(cluster_id);
-            
-            let filtered_data: Vec<_> = data.iter()
+
+            let filtered_data: Vec<_> = data
+                .iter()
                 .zip(assignments.iter())
                 .filter(|(point, &c)| c == cluster_id && point.len() >= 3)
                 .map(|(point, _)| (point[0], point[2]))
                 .collect();
-                
+
             if !filtered_data.is_empty() {
                 front_chart.draw_series(
-                    filtered_data.iter().map(|&(x, y)| {
-                        Circle::new((x, y), 3, cluster_color.filled())
-                    })
+                    filtered_data
+                        .iter()
+                        .map(|&(x, y)| Circle::new((x, y), 3, cluster_color.filled())),
                 )?;
             }
         }
@@ -238,31 +257,37 @@ pub fn plot_3d(
         front_chart.draw_series(
             data.iter()
                 .filter(|point| point.len() >= 3)
-                .map(|point| Circle::new((point[0], point[2]), 3, BLUE.filled()))
+                .map(|point| Circle::new((point[0], point[2]), 3, BLUE.filled())),
         )?;
     }
 
     // Draw centroids on front view
     front_chart.draw_series(
-        centroids.iter().enumerate()
+        centroids
+            .iter()
+            .enumerate()
             .filter(|(_, centroid)| centroid.len() >= 3)
             .map(|(i, centroid)| {
                 let center = (centroid[0], centroid[2]);
                 EmptyElement::at(center)
                     + Cross::new((0, 0), 8, Into::<ShapeStyle>::into(&BLACK).stroke_width(2))
                     + Circle::new((0, 0), 8, get_cluster_color(i).filled())
-            })
+            }),
     )?;
 
     // Create 3D-like view using Y-Z plane (side view)
     let mut side_chart = ChartBuilder::on(&bottom_right)
-        .caption(format!("{}: {} vs {} (Side View)", plot_title, y_label, z_label), ("Arial", 20))
+        .caption(
+            format!("{}: {} vs {} (Side View)", plot_title, y_label, z_label),
+            ("Arial", 20),
+        )
         .margin(10)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
         .build_cartesian_2d(min..max, min..max)?;
 
-    side_chart.configure_mesh()
+    side_chart
+        .configure_mesh()
         .x_desc(y_label)
         .y_desc(z_label)
         .draw()?;
@@ -271,18 +296,19 @@ pub fn plot_3d(
     if let Some(assignments) = cluster_assignments {
         for cluster_id in 0..centroids.len() {
             let cluster_color = get_cluster_color(cluster_id);
-            
-            let filtered_data: Vec<_> = data.iter()
+
+            let filtered_data: Vec<_> = data
+                .iter()
                 .zip(assignments.iter())
                 .filter(|(point, &c)| c == cluster_id && point.len() >= 3)
                 .map(|(point, _)| (point[1], point[2]))
                 .collect();
-                
+
             if !filtered_data.is_empty() {
                 side_chart.draw_series(
-                    filtered_data.iter().map(|&(x, y)| {
-                        Circle::new((x, y), 3, cluster_color.filled())
-                    })
+                    filtered_data
+                        .iter()
+                        .map(|&(x, y)| Circle::new((x, y), 3, cluster_color.filled())),
                 )?;
             }
         }
@@ -291,53 +317,52 @@ pub fn plot_3d(
         side_chart.draw_series(
             data.iter()
                 .filter(|point| point.len() >= 3)
-                .map(|point| Circle::new((point[1], point[2]), 3, BLUE.filled()))
+                .map(|point| Circle::new((point[1], point[2]), 3, BLUE.filled())),
         )?;
     }
 
     // Draw centroids on side view
     side_chart.draw_series(
-        centroids.iter().enumerate()
+        centroids
+            .iter()
+            .enumerate()
             .filter(|(_, centroid)| centroid.len() >= 3)
             .map(|(i, centroid)| {
                 let center = (centroid[1], centroid[2]);
                 EmptyElement::at(center)
                     + Cross::new((0, 0), 8, Into::<ShapeStyle>::into(&BLACK).stroke_width(2))
                     + Circle::new((0, 0), 8, get_cluster_color(i).filled())
-            })
+            }),
     )?;
 
     // Add color legend
     let legend_area = bottom_right.clone().margin(5, 5, 5, 5);
-    
+
     // Draw cluster legend
     let mut legend_y = 40;
-    
+
     // Fixed: Use a proper TextStyle
     let text_style = ("Arial", 15).into_text_style(&legend_area);
     // Draw legend title
-    legend_area.draw_text(
-        "Legend:",
-        &text_style,
-        (700, legend_y)
-    )?;
+    legend_area.draw_text("Legend:", &text_style, (700, legend_y))?;
     legend_y += 25;
-    
-    // Draw centroid legend entry
-   // Draw centroid legend entry
-legend_area.draw(&(EmptyElement::at((700, legend_y)) 
-+ Cross::new((0, 0), 8, BLACK.stroke_width(2))
-+ Circle::new((0, 0), 8, RED.filled())))?;
 
-legend_area.draw_text(
-"Centroid",
-&("Arial", 12).into_text_style(&legend_area),
-(720, legend_y)
-)?;
-    
-    
+    // Draw centroid legend entry
+    // Draw centroid legend entry
+    legend_area.draw(
+        &(EmptyElement::at((700, legend_y))
+            + Cross::new((0, 0), 8, BLACK.stroke_width(2))
+            + Circle::new((0, 0), 8, RED.filled())),
+    )?;
+
+    legend_area.draw_text(
+        "Centroid",
+        &("Arial", 12).into_text_style(&legend_area),
+        (720, legend_y),
+    )?;
+
     legend_y += 20;
-    
+
     // Draw cluster legend entries
     if let Some(_) = cluster_assignments {
         for i in 0..centroids.len() {
@@ -346,7 +371,7 @@ legend_area.draw_text(
             legend_area.draw_text(
                 &format!("Cluster {}", i),
                 &("Arial", 12).into_text_style(&legend_area),
-                (720, legend_y)
+                (720, legend_y),
             )?;
             legend_y += 20;
         }
@@ -355,7 +380,7 @@ legend_area.draw_text(
         legend_area.draw_text(
             "Data Points",
             &("Arial", 12).into_text_style(&legend_area),
-            (720, legend_y)
+            (720, legend_y),
         )?;
     }
 
